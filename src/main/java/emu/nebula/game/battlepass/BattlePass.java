@@ -17,6 +17,8 @@ import emu.nebula.game.quest.QuestType;
 import emu.nebula.net.NetMsgId;
 import emu.nebula.proto.BattlePassInfoOuterClass.BattlePassInfo;
 import emu.nebula.util.Bitset;
+import emu.nebula.util.ResetCycle;
+import emu.nebula.util.Utils;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -82,6 +84,55 @@ public class BattlePass implements GameDatabaseObject {
         }
 
         return GameConstants.BATTLE_PASS_ID;
+    }
+
+    /**
+     * Advances to the currently active battle pass season and resets seasonal
+     * progress/rewards if the stored season ID no longer matches.
+     */
+    public synchronized boolean checkSeasonRollover() {
+        int activeId = getActiveBattlePassId();
+        if (this.battlePassId == activeId) {
+            return false;
+        }
+
+        this.battlePassId = activeId;
+        this.mode = 0;
+        this.level = 0;
+        this.exp = 0;
+        this.expWeek = 0;
+
+        if (this.basicReward == null) {
+            this.basicReward = new Bitset();
+        } else {
+            this.basicReward.clear();
+        }
+
+        if (this.premiumReward == null) {
+            this.premiumReward = new Bitset();
+        } else {
+            this.premiumReward.clear();
+        }
+
+        if (this.quests == null) {
+            this.quests = new HashMap<>();
+        }
+
+        this.resetQuestsInternal(true);
+        this.save();
+        return true;
+    }
+
+    private long getDeadlineTimestamp() {
+        var data = GameData.getBattlePassDataTable().get(this.getBattlePassId());
+        long now = Nebula.getCurrentServerTime();
+        if (data != null) {
+            long end = data.getEndTimeTimestamp();
+            if (end > now && end < Long.MAX_VALUE) {
+                return end;
+            }
+        }
+        return Utils.getNextResetTimeSeconds(ResetCycle.MONTHLY);
     }
     
     public Player getPlayer() {
@@ -192,6 +243,17 @@ public class BattlePass implements GameDatabaseObject {
     }
     
     public synchronized void resetDailyQuests(boolean resetWeekly) {
+        if (this.checkSeasonRollover()) {
+            return;
+        }
+
+        this.resetQuestsInternal(resetWeekly);
+
+        // Persist to database
+        this.save();
+    }
+
+    private void resetQuestsInternal(boolean resetWeekly) {
         // Reset daily quests
         for (var data : GameData.getBattlePassQuestDataTable()) {
             // Get quest
@@ -213,9 +275,6 @@ public class BattlePass implements GameDatabaseObject {
         if (resetWeekly) {
             this.expWeek = 0;
         }
-        
-        // Persist to database
-        this.save();
     }
     
     public synchronized void trigger(int condition, int progress, int param1, int param2) {
@@ -478,13 +537,15 @@ public class BattlePass implements GameDatabaseObject {
                     .setPremiumReward();
         }
 
+        this.checkSeasonRollover();
+
         var proto = BattlePassInfo.newInstance()
                 .setId(this.getBattlePassId())
                 .setLevel(this.getLevel())
                 .setMode(this.getMode())
                 .setExp(this.getExp())
                 .setExpThisWeek(this.getExpWeek())
-                .setDeadline(Long.MAX_VALUE)
+                .setDeadline(this.getDeadlineTimestamp())
                 .setBasicReward(this.getBasicReward().toByteArray())
                 .setPremiumReward(this.getPremiumReward().toByteArray());
 
