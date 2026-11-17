@@ -3,7 +3,11 @@
 Nebula is a game server reimplementation. This guide explains how reverse-engineered client artifacts (network opcodes, protobuf schemas, client `bin/*.json` tables, and client logic) map into Nebula's Java codebase.
 
 > [!NOTE]
-> Repeatable client-dumping or data-extraction scripts/workflows are intentionally kept out of core repository docs and can be automated separately via dedicated Agent Skills.
+> Repeatable data-extraction, schema-auditing, and reverse-engineering workflows are automated via workspace Agent Skills under `.agents/skills/`:
+> - [`nebula-data-extraction`](../.agents/skills/nebula-data-extraction/SKILL.md) — Query `resources/bin/` & `resources/language/`, scaffold `*Def.java` + `GameData`, and audit schema drift.
+> - [`nebula-custom-params`](../.agents/skills/nebula-custom-params/SKILL.md) — Audit and generate stubs for `src/main/resources/defs/*.json` (`AchievementParam`, `DormQuestParam`, `StarTowerQuestParam`) and `PlayerErrorCode`.
+> - [`nebula-packet-re`](../.agents/skills/nebula-packet-re/SKILL.md) — Audit unimplemented `NetMsgId` opcodes, extract Quickbuf `.proto` schemas, decode `AgentZoneHandler` hex packet logs, and search client dumps.
+> - [`nebula-version-bump`](../.agents/skills/nebula-version-bump/SKILL.md) — Consolidated patch audit across `GameConstants`, `versions.json`, `ActivityModule`, condition enums, and custom params.
 
 ---
 
