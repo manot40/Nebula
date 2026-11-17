@@ -71,6 +71,7 @@ public class BattlePassManager extends PlayerManager {
             this.battlePass = new BattlePass(this);
         } else {
             this.battlePass.setManager(this);
+            this.battlePass.checkSeasonRollover();
         }
     }
 }
