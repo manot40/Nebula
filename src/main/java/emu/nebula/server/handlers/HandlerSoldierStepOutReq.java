@@ -8,16 +8,10 @@ import emu.nebula.net.NetMsgId;
 @HandlerId(NetMsgId.soldier_step_out_req)
 public class HandlerSoldierStepOutReq extends NetHandler {
     @Override
-    public byte[] handle(GameSession session, byte[] message) throws Exception {
-        /*
-        var req = SoldierStepOutReq.parseFrom(message);
-        var activity = session.getPlayer().getActivityManager().getFirstActivity(SoldierActivity.class);
-        if (activity == null || !req.hasDeploy() || !activity.stepOut(req.getDeploy())) {
-            return session.encodeMsg(NetMsgId.soldier_step_out_failed_ack);
-        }
-        return session.encodeMsg(NetMsgId.soldier_step_out_succeed_ack);
-        */
-        
-        return session.encodeMsg(NetMsgId.soldier_step_out_failed_ack);
+    public byte[] handle(GameSession session, byte[] message) {
+        boolean ok = session.getPlayer().getSoldierManager().stepOut();
+        return session.encodeMsg(ok
+                ? NetMsgId.soldier_step_out_succeed_ack
+                : NetMsgId.soldier_step_out_failed_ack);
     }
 }

@@ -201,6 +201,16 @@ public class GameData {
     @Getter private static DataTable<SoldierStrategyCardDef> SoldierStrategyCardDataTable = new DataTable<>();
     @Getter private static DataTable<SoldierCardEffectDef> SoldierCardEffectDataTable = new DataTable<>();
     @Getter private static DataTable<SoldierBuffDef> SoldierBuffDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierBossTemplateDef> SoldierBossTemplateDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierTechNodeDef> SoldierTechNodeDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierTotalRewardDef> SoldierTotalRewardDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierCheckStageAddScoreDef> SoldierCheckStageAddScoreDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierEventPersonalityStoryDef> SoldierEventPersonalityStoryDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierStoryPersonalityOptionDef> SoldierStoryPersonalityOptionDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierStoryResultDef> SoldierStoryResultDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierStoryRewardDef> SoldierStoryRewardDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierStoryTypeDef> SoldierStoryTypeDataTable = new DataTable<>();
+    @Getter private static DataTable<SoldierEndingPlanDef> SoldierEndingPlanDataTable = new DataTable<>();
     
     // Activity: Trials
     @Getter private static DataTable<TrialControlDef> TrialControlDataTable = new DataTable<>();

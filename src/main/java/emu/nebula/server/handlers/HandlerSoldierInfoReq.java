@@ -9,14 +9,9 @@ import emu.nebula.net.NetMsgId;
 public class HandlerSoldierInfoReq extends NetHandler {
     @Override
     public byte[] handle(GameSession session, byte[] message) {
-        /*
-        var activity = session.getPlayer().getActivityManager().getFirstActivity(SoldierActivity.class);
-        var info = activity == null ? null : activity.info();
+        var info = session.getPlayer().getSoldierManager().getInfoProto();
         return info == null
                 ? session.encodeMsg(NetMsgId.soldier_info_failed_ack)
                 : session.encodeMsg(NetMsgId.soldier_info_succeed_ack, info);
-        */
-        
-        return session.encodeMsg(NetMsgId.soldier_info_failed_ack);
     }
 }

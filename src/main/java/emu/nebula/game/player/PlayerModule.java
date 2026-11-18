@@ -26,6 +26,7 @@ import emu.nebula.game.inventory.Inventory;
 import emu.nebula.game.mail.Mailbox;
 import emu.nebula.game.quest.QuestManager;
 import emu.nebula.game.scoreboss.ScoreBossRankEntry;
+import emu.nebula.game.soldier.SoldierManager;
 import emu.nebula.game.story.StoryManager;
 import emu.nebula.game.tower.StarTowerBuild;
 import emu.nebula.game.tracehunt.TraceHuntManager;
@@ -189,6 +190,7 @@ public class PlayerModule extends GameContextModule {
         datastore.getCollection(AchievementManager.class).deleteOne(idFilter);
         datastore.getCollection(ActivityManager.class).deleteOne(idFilter);
         datastore.getCollection(DormManager.class).deleteOne(idFilter);
+        datastore.getCollection(SoldierManager.class).deleteOne(idFilter);
         
         datastore.getCollection(BattlePass.class).deleteOne(idFilter);
         datastore.getCollection(ScoreBossRankEntry.class).deleteOne(idFilter);
