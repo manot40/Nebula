@@ -71,5 +71,5 @@ python .agents/skills/nebula-data-extraction/scripts/audit_tables.py --unmapped 
 ## 4. Verification
 After adding or modifying any `*Def.java` or `GameData.java` entry, verify compilation with:
 ```bash
-bash ./gradlew injectGitHash compileJava
+bash ./gradlew injectGitHash compileJava   # or .\gradlew.bat injectGitHash compileJava on Windows
 ```

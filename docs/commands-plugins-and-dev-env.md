@@ -57,9 +57,11 @@ public class GiveCommand implements CommandHandler {
 ## 3. Building & Verifying Locally
 
 - **JDK**: Java 21 (configured in `build.gradle` toolchain and `.github/workflows/gradle.yml`).
-- **Build fat jar** (`gradlew` is not marked executable in git, so invoke with `bash` or run `chmod +x gradlew` first):
+- **Build fat jar** (`gradlew` is not marked executable in git, so invoke with `bash` on Unix/macOS or `.\gradlew.bat` on Windows PowerShell):
   ```bash
   bash ./gradlew jar
+  # Windows PowerShell (stop running java -jar Nebula.jar first since Windows locks the jar):
+  .\gradlew.bat jar
   ```
   This runs `injectGitHash` -> writes `src/main/java/emu/nebula/BuildConfig.java` -> outputs `./Nebula.jar`.
 - **Compile-only check**:

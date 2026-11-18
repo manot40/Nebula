@@ -50,3 +50,10 @@ When a reverse-engineered feature requires new persistent player state:
    - Load in `Player.onLoad()` (`src/main/java/emu/nebula/game/player/Player.java`).
    - Delete in `PlayerModule.deletePlayer(int uid)` (`src/main/java/emu/nebula/game/player/PlayerModule.java`).
    - Populate login state in `Player.toProto()` if the client expects initial bootstrap data in `player_data_succeed_ack`.
+
+---
+
+## 4. Quickbuf Ordering & Live Client Log Checks
+
+- **Quickbuf field tag order**: Quickbuf serializes fields strictly in ascending proto tag order, not setter call order. If one sub-message holds both removal and addition fields (e.g., `SoldierTransform`: `Consume = 1` before `Obtain = 2`), split ordered steps into separate repeated transform entries rather than combining obtain + consume of the same UID in one element.
+- **Correlate `AgentZoneHandler` hex logs with Unity `Player.log`**: When a server ACK succeeds (`*_succeed_ack`) yet the client UI freezes or fails to update, check the client's `Player.log` (on Windows: `%USERPROFILE%\AppData\LocalLow\YOSTAR (HONG KONG) LIMITED\StellaSora\Player.log`) for Lua nil-field tracebacks (e.g., extra UI options, missing `Node` change fields, or missing case entries).

@@ -14,6 +14,8 @@ Welcome to the developer documentation for **Nebula**. These guides cover server
 | [game-data-and-protos.md](game-data-and-protos.md) | `BaseDef`, `@ResourceType`, `GameData` reflection mapping, `src/main/resources/defs/` internal overrides, `versions.json`, and Quickbuf regeneration. |
 | [commands-plugins-and-dev-env.md](commands-plugins-and-dev-env.md) | `@Command` handlers, `Plugin` API, `./gradlew jar` build gotchas, embedded H2 vs. MongoDB (`compose.yaml`), `mitmproxy`, and packet logging. |
 | [reverse-engineering.md](reverse-engineering.md) | Integrating reverse-engineered packets, opcodes (`NetMsgId`), client `bin/*.json` schemas, custom `defs/*.json` params, condition enums, and version bumps. |
+| [gameplay/solider-game-rule.md](gameplay/solider-game-rule.md) | Soldier (`2.0+` Through Hostile Depths) gameplay mechanics, board slots, shop pools, traits, and meta progression. |
+| [gameplay/soldier-game-implementation-state.md](gameplay/soldier-game-implementation-state.md) | Soldier (`2.0+`) live-tested status and verified protocol catches (`Cases`, `DeploySync`, `SoldierTransform`, Turning Points). |
 
 ## Recommended Reading Paths by Task
 
