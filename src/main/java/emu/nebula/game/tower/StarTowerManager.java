@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 
 import emu.nebula.GameConstants;
 import emu.nebula.Nebula;
@@ -11,11 +12,14 @@ import emu.nebula.data.GameData;
 import emu.nebula.data.resources.StarTowerGrowthNodeDef;
 import emu.nebula.game.achievement.AchievementCondition;
 import emu.nebula.game.character.GameCharacter;
+import emu.nebula.game.inventory.ItemParamMap;
+import emu.nebula.game.inventory.ItemSubType;
 import emu.nebula.game.player.Player;
 import emu.nebula.game.player.PlayerChangeInfo;
 import emu.nebula.game.player.PlayerManager;
 import emu.nebula.game.player.PlayerProgress;
 import emu.nebula.game.quest.QuestCondition;
+import emu.nebula.proto.Public.ItemTpls;
 import emu.nebula.proto.Public.TowerVitaProject;
 import emu.nebula.proto.PublicStarTower.StarTowerBookCharPotential;
 import emu.nebula.proto.StarTowerApply.StarTowerApplyReq;
@@ -329,6 +333,144 @@ public class StarTowerManager extends PlayerManager {
         this.dismantleBuild(build, change);
         
         // Success
+        return change;
+    }
+
+    @FunctionalInterface
+    private interface BuildEntryValidator {
+        boolean isValid(StarTowerBuild build, int id, int currentValue, int delta);
+    }
+
+    public PlayerChangeInfo modifyBuildNotes(long buildId, ItemTpls noteChange) {
+        return this.modifyBuild(
+                buildId,
+                noteChange,
+                StarTowerBuild.MODIFIER_NOTE,
+                GameConstants.BUILD_NOTE_MODIFIER_POINT_MAX,
+                GameConstants.BUILD_NOTE_MODIFIER_ITEM_ID,
+                GameConstants.BUILD_NOTE_MODIFIER_ITEM_QTY,
+                StarTowerBuild::getSubNoteSkills,
+                (build, id, current, delta) -> {
+                    var itemData = GameData.getItemDataTable().get(id);
+                    if (itemData == null || itemData.getItemSubType() != ItemSubType.SubNoteSkill) {
+                        return false;
+                    }
+                    int next = current + delta;
+                    return next >= 0 && next <= GameConstants.DISC_SUB_NOTE_SKILL_MAX_LEVEL;
+                },
+                true
+        );
+    }
+
+    public PlayerChangeInfo modifyBuildPotentials(long buildId, ItemTpls potentialChange) {
+        return this.modifyBuild(
+                buildId,
+                potentialChange,
+                StarTowerBuild.MODIFIER_POTENTIAL,
+                GameConstants.BUILD_POTENTIAL_MODIFIER_POINT_MAX,
+                GameConstants.BUILD_POTENTIAL_MODIFIER_ITEM_ID,
+                GameConstants.BUILD_POTENTIAL_MODIFIER_ITEM_QTY,
+                StarTowerBuild::getPotentials,
+                (build, id, current, delta) -> {
+                    var potentialData = GameData.getPotentialDataTable().get(id);
+                    if (potentialData == null || potentialData.isSpecial() || !build.hasChar(potentialData.getCharId())) {
+                        return false;
+                    }
+                    int next = current + delta;
+                    int maxLevel = Math.max(potentialData.getMaxLevel(), current);
+                    return next >= 0 && next <= maxLevel;
+                },
+                false
+        );
+    }
+
+    private PlayerChangeInfo modifyBuild(
+            long buildId,
+            ItemTpls changeTpls,
+            int modifierFlag,
+            int maxPoints,
+            int costItemId,
+            int costItemQty,
+            Function<StarTowerBuild, ItemParamMap> mapGetter,
+            BuildEntryValidator validator,
+            boolean refreshSecondarySkills
+    ) {
+        if (changeTpls == null) {
+            return null;
+        }
+
+        var build = this.getBuildById(buildId);
+        if (build == null || build.isLock()
+                || build.getScore() < GameConstants.BUILD_MODIFIER_MIN_SCORE
+                || build.hasModifierState(modifierFlag)) {
+            return null;
+        }
+
+        var deltas = ItemParamMap.fromTemplates(changeTpls.getItems());
+        if (deltas.isEmpty()) {
+            return null;
+        }
+
+        var targetMap = mapGetter.apply(build);
+        long positivePoints = 0;
+        long negativePoints = 0;
+
+        for (var entry : deltas.int2IntEntrySet()) {
+            int id = entry.getIntKey();
+            int delta = entry.getIntValue();
+            if (delta == 0) {
+                continue;
+            }
+
+            int current = targetMap.get(id);
+            if (!validator.isValid(build, id, current, delta)) {
+                return null;
+            }
+
+            if (delta > 0) {
+                positivePoints += delta;
+            } else {
+                negativePoints += -((long) delta);
+            }
+        }
+
+        if (positivePoints <= 0 || positivePoints != negativePoints || positivePoints > maxPoints) {
+            return null;
+        }
+
+        if (!this.getPlayer().getInventory().hasItem(costItemId, costItemQty)) {
+            return null;
+        }
+
+        var change = this.getPlayer().getInventory().removeItem(costItemId, costItemQty);
+
+        for (var entry : deltas.int2IntEntrySet()) {
+            int id = entry.getIntKey();
+            int delta = entry.getIntValue();
+            if (delta == 0) {
+                continue;
+            }
+
+            int next = targetMap.get(id) + delta;
+            if (next <= 0) {
+                targetMap.remove(id);
+            } else {
+                targetMap.put(id, next);
+            }
+        }
+
+        build.markModifierUsed(modifierFlag);
+        if (refreshSecondarySkills) {
+            build.refreshSecondarySkills();
+        }
+        build.calculateScore();
+        build.save();
+
+        if (!refreshSecondarySkills) {
+            this.updateSeenPotentials(build);
+        }
+
+        change.setExtraData(build);
         return change;
     }
     

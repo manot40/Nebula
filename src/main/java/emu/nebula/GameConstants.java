@@ -65,6 +65,14 @@ public class GameConstants {
     public static final int[] TOWER_EVENTS_IDS = new int[] {
         101, 102, 104, 105, 106, 107, 108, 114, 115, 116, 126, 127, 128
     };
+    public static final int BUILD_MODIFIER_MIN_SCORE = 5800;
+    public static final int BUILD_POTENTIAL_MODIFIER_ITEM_ID = 35012;
+    public static final int BUILD_POTENTIAL_MODIFIER_ITEM_QTY = 1;
+    public static final int BUILD_POTENTIAL_MODIFIER_POINT_MAX = 5;
+    public static final int BUILD_NOTE_MODIFIER_ITEM_ID = 35013;
+    public static final int BUILD_NOTE_MODIFIER_ITEM_QTY = 1;
+    public static final int BUILD_NOTE_MODIFIER_POINT_MAX = 15;
+    public static final int DISC_SUB_NOTE_SKILL_MAX_LEVEL = 99;
 
     // Star Tower Vita (auto decision)
     public static final int VITA_ENERGY_ITEM_ID = 42;

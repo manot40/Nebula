@@ -47,6 +47,10 @@ public class PotentialDef extends BaseDef {
     }
 
     public int getBuildScore(int level) {
+        if (level <= 0 || this.BuildScore == null || this.BuildScore.length == 0) {
+            return 0;
+        }
+
         int index = level - 1;
         
         if (index >= this.BuildScore.length) {
