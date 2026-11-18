@@ -14,6 +14,8 @@ import emu.nebula.proto.PublicStarTower.StarTowerRoomCase;
 import emu.nebula.proto.StarTowerInteract.StarTowerInteractReq;
 import emu.nebula.proto.StarTowerInteract.StarTowerInteractResp;
 import emu.nebula.util.Utils;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 
 import lombok.Getter;
 
@@ -44,14 +46,14 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
         // Clear goods
         this.getGoods().clear();
         
-        // Caclulate amount of potentials/sub notes to sell
+        // Calculate amount of potentials/sub notes to sell (guarantee at least 3 melodies when total >= 3)
         int total = getModifiers().getShopGoodsCount();
-        
-        int minPotentials = Math.max(total / 2, 2);             // At least half of the shop goods should be potential drinks
-        int maxPotentials = Math.max(total - 1, minPotentials); // Make sure we have at least melodic note goods IF we have more than 2 shop goods
-        int potentials = Utils.randomRange(minPotentials, maxPotentials);
-        
-        int subNotes = total - potentials;
+        int minSubNotes = Math.min(3, total);
+        int minPotentials = total >= 6 ? total / 2 : (total > minSubNotes ? 1 : 0);
+        int maxSubNotes = Math.max(minSubNotes, total - minPotentials);
+
+        int subNotes = Utils.randomRange(minSubNotes, maxSubNotes);
+        int potentials = total - subNotes;
         boolean hasCoins = this.getGame().getResCount(GameConstants.TOWER_COIN_ITEM_ID) >= 500;
         
         // Add goods
@@ -67,9 +69,12 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
             // Add to goods map
             this.addGoods(goods);
         }
+
+        IntSet usedSubNoteIds = new IntOpenHashSet();
         for (int i = 0; i < subNotes; i++) {
-            // Randomize sub note
-            int id = this.getGame().getRandomSubNoteId();
+            // Randomize distinct sub note
+            int id = this.getGame().getRandomSubNoteId(usedSubNoteIds);
+            usedSubNoteIds.add(id);
             
             // Create sub note shop item
             StarTowerShopGoods goods = null;

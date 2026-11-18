@@ -24,10 +24,14 @@ public enum ElementType {
     private final IntSet gemAttrTypes;
     
     private final static Int2ObjectMap<ElementType> map = new Int2ObjectOpenHashMap<>();
+    private final static IntSet elementSubNotes = new IntOpenHashSet();
     
     static {
         for (ElementType type : ElementType.values()) {
             map.put(type.getValue(), type);
+            if (type.getSubNoteSkillItemId() > 0) {
+                elementSubNotes.add(type.getSubNoteSkillItemId());
+            }
         }
     }
     
@@ -45,5 +49,9 @@ public enum ElementType {
     
     public static ElementType getByValue(int value) {
         return map.get(value);
+    }
+
+    public static boolean isElementSubNote(int itemId) {
+        return elementSubNotes.contains(itemId);
     }
 }
