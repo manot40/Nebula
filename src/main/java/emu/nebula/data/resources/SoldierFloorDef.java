@@ -10,6 +10,7 @@ public class SoldierFloorDef extends BaseDef {
     private int Id;
     private int Default;
     private int BattleTime;
+    private boolean IsDpsCheckStage;
 
     @Override
     public int getId() {

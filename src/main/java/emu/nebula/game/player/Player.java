@@ -29,6 +29,7 @@ import emu.nebula.game.mail.Mailbox;
 import emu.nebula.game.quest.QuestCondition;
 import emu.nebula.game.quest.QuestManager;
 import emu.nebula.game.scoreboss.ScoreBossManager;
+import emu.nebula.game.soldier.SoldierManager;
 import emu.nebula.game.story.StoryManager;
 import emu.nebula.game.tower.StarTowerManager;
 import emu.nebula.game.tracehunt.TraceHuntManager;
@@ -117,6 +118,7 @@ public class Player implements GameDatabaseObject {
     private transient TraceHuntManager traceHuntManager;
     private transient ActivityManager activityManager;
     private transient DormManager dormManager;
+    private transient SoldierManager soldierManager;
     
     // Extra
     private transient Stack<NetMsgPacket> nextPackages;
@@ -837,6 +839,7 @@ public class Player implements GameDatabaseObject {
         this.traceHuntManager = this.loadManagerFromDatabase(TraceHuntManager.class);
         this.activityManager = this.loadManagerFromDatabase(ActivityManager.class);
         this.dormManager = this.loadManagerFromDatabase(DormManager.class);
+        this.soldierManager = this.loadManagerFromDatabase(SoldierManager.class);
         
         // Database fixes
         if (this.showChars == null) {
@@ -1264,6 +1267,7 @@ public class Player implements GameDatabaseObject {
         state.getMutableCharAffinityRewards();
         state.getMutableTraceHunt().setBossRewardCanReceive(this.getTraceHuntManager().isHuntComplete());
         state.setDormStateFlag(this.getDormManager().getState());
+        state.setSoldier(this.getSoldierManager().getStateProto());
         
         // Star tower potential book state
         var book = state.getMutableStarTowerBook();
