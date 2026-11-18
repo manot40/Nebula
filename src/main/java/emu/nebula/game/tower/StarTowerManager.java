@@ -460,6 +460,7 @@ public class StarTowerManager extends PlayerManager {
         }
 
         build.markModifierUsed(modifierFlag);
+        build.clearDiscard();
         if (refreshSecondarySkills) {
             build.refreshSecondarySkills();
         }

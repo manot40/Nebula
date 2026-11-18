@@ -39,6 +39,7 @@ public class StarTowerBuild implements GameDatabaseObject {
     private String name;
     private boolean lock;
     private boolean preference;
+    private boolean discard;
     private int score;
     private int modifierState;
     
@@ -126,6 +127,10 @@ public class StarTowerBuild implements GameDatabaseObject {
         // Set locked state
         this.lock = state;
         Nebula.getGameDatabase().update(this, this.getUid(), "lock", this.isLock());
+
+        if (state && this.discard) {
+            this.setDiscard(false);
+        }
     }
     
     public void setPreference(boolean state) {
@@ -137,6 +142,23 @@ public class StarTowerBuild implements GameDatabaseObject {
         // Set preference (favorite toggle)
         this.preference = state;
         Nebula.getGameDatabase().update(this, this.getUid(), "preference", this.isPreference());
+
+        if (state && this.discard) {
+            this.setDiscard(false);
+        }
+    }
+
+    public void setDiscard(boolean state) {
+        if (this.discard == state) {
+            return;
+        }
+
+        this.discard = state;
+        Nebula.getGameDatabase().update(this, this.getUid(), "discard", this.isDiscard());
+    }
+
+    public void clearDiscard() {
+        this.discard = false;
     }
 
     public void refreshSecondarySkills() {
@@ -213,6 +235,7 @@ public class StarTowerBuild implements GameDatabaseObject {
                 .setName(this.getName())
                 .setLock(this.isLock())
                 .setPreference(this.isPreference())
+                .setDiscard(this.isDiscard())
                 .setScore(this.getScore())
                 .addAllDiscIds(this.getDiscIds());
         
