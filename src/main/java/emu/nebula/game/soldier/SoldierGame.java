@@ -48,7 +48,7 @@ public class SoldierGame {
     public static final int SHOP_SIZE = 5;
     public static final int BOARD_SLOT_MAX = 9;
     public static final int BENCH_SLOT_START = 10;
-    public static final int BENCH_SLOT_COUNT = 8;
+    public static final int BENCH_SLOT_COUNT = 9;
     public static final int POOL_COPIES_PER_UNIT = 9;
     public static final int SHOP_REFRESH_COST = 2;
     public static final int SHOP_EXP_COST = 4;
@@ -1612,20 +1612,34 @@ public class SoldierGame {
      * SoldierTransform steps so the client applies Obtain before Consume.
      */
     private List<PublicSoldier.SoldierTransform> appendAndMergeChess(ChessEntry entry) {
-        chessList().add(entry);
         var transforms = new ArrayList<PublicSoldier.SoldierTransform>();
-        ChessEntry unobtainedTransient = null;
-        if (entry.slot > 0) {
-            transforms.add(PublicSoldier.SoldierTransform.newInstance().addObtain(toChessProto(entry)));
-        } else {
-            unobtainedTransient = entry;
+        if (entry.slot == 0) {
+            var existing = findMatches(entry.tid, entry.star);
+            existing.sort(Comparator.comparingInt(e -> mergeKeepPriority(e, entry)));
+            if (existing.size() < 2) {
+                return transforms;
+            }
+            // Reuse the slot of the existing copy that will be consumed by mergeTriples
+            // so Obtain and ShopResp.Goods reference a valid slot (> 0).
+            entry.slot = existing.get(1).slot;
         }
-        mergeTriples(entry, transforms, unobtainedTransient);
+        chessList().add(entry);
+        transforms.add(PublicSoldier.SoldierTransform.newInstance().addObtain(toChessProto(entry)));
+        mergeTriples(entry, transforms);
         return transforms;
     }
 
-    private void mergeTriples(ChessEntry triggerEntry, List<PublicSoldier.SoldierTransform> transforms,
-            ChessEntry unobtainedTransient) {
+    private List<ChessEntry> findMatches(int tid, int star) {
+        var matches = new ArrayList<ChessEntry>();
+        for (var entry : chessList()) {
+            if (entry.tid == tid && entry.star == star) {
+                matches.add(entry);
+            }
+        }
+        return matches;
+    }
+
+    private void mergeTriples(ChessEntry triggerEntry, List<PublicSoldier.SoldierTransform> transforms) {
         SoldierCharacterDef charDef = GameData.getSoldierCharacterDataTable().get(triggerEntry.tid);
         int maxStar = charDef != null && charDef.getMaxStar() > 0 ? charDef.getMaxStar() : 3;
 
@@ -1633,12 +1647,7 @@ public class SoldierGame {
         while (merged) {
             merged = false;
             for (int star = 1; star < maxStar; star++) {
-                var matches = new ArrayList<ChessEntry>();
-                for (var entry : chessList()) {
-                    if (entry.tid == triggerEntry.tid && entry.star == star) {
-                        matches.add(entry);
-                    }
-                }
+                var matches = findMatches(triggerEntry.tid, star);
                 if (matches.size() >= 3) {
                     matches.sort(Comparator.comparingInt(e -> mergeKeepPriority(e, triggerEntry)));
                     ChessEntry kept = matches.get(0);
@@ -1646,19 +1655,12 @@ public class SoldierGame {
                     ChessEntry c2 = matches.get(2);
                     chessList().remove(c1);
                     chessList().remove(c2);
-                    if (kept.slot == 0) {
-                        kept.slot = allocateBenchSlot();
-                    }
                     kept.star++;
 
-                    var mergeTransform = PublicSoldier.SoldierTransform.newInstance();
-                    if (c1 != unobtainedTransient) {
-                        mergeTransform.addConsume(toChessProto(c1));
-                    }
-                    if (c2 != unobtainedTransient) {
-                        mergeTransform.addConsume(toChessProto(c2));
-                    }
-                    mergeTransform.addUpdate(toChessProto(kept));
+                    var mergeTransform = PublicSoldier.SoldierTransform.newInstance()
+                            .addConsume(toChessProto(c1))
+                            .addConsume(toChessProto(c2))
+                            .addUpdate(toChessProto(kept));
                     transforms.add(mergeTransform);
                     merged = true;
                     break;
