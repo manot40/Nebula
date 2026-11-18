@@ -333,6 +333,9 @@ public class StarTowerNpcEventCase extends StarTowerBaseCase {
     
     private void addRarePotentialSelector(StarTowerInteractResp rsp, int charId) {
         var selectorCase = this.getGame().createPotentialSelector(charId, true);
+        if (selectorCase == null) {
+            selectorCase = this.getGame().createPotentialSelector(charId, false);
+        }
         this.getRoom().addCase(rsp.getMutableCases(), selectorCase);
     }
     

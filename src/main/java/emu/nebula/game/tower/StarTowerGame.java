@@ -39,6 +39,8 @@ import emu.nebula.proto.StarTowerInteract.StarTowerInteractResp;
 import emu.nebula.util.Snowflake;
 import emu.nebula.util.Utils;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -204,6 +206,50 @@ public class StarTowerGame {
     
     public int getRarePotentialCount(int charId) {
         return this.getRarePotentialCount().get(charId);
+    }
+
+    /**
+     * Returns how many special/rare potential selectors are still needed so each
+     * deployed character receives 2, excluding selectors already queued.
+     */
+    public int getRemainingRarePotentialCount() {
+        int needed = 0;
+
+        for (int charId : this.getCharIds()) {
+            needed += Math.max(0, 2 - this.getRarePotentialCount(charId));
+        }
+
+        return Math.max(0, needed - this.pendingRarePotentialCases);
+    }
+
+    /**
+     * Counts remaining battle-type rooms strictly after the current stage/floor.
+     */
+    public int getRemainingBattleRoomCount() {
+        int count = 0;
+        int stage = this.stageNum;
+        int floor = this.stageFloor;
+
+        while (true) {
+            if (floor >= this.getData().getMaxFloor(stage)) {
+                stage++;
+                floor = 1;
+            } else {
+                floor++;
+            }
+
+            var nextStage = this.getStageData(stage, floor);
+            if (nextStage == null) {
+                break;
+            }
+
+            var roomType = nextStage.getRoomType();
+            if (roomType != null && roomType.getValue() <= RoomType.FinalBossRoom.getValue()) {
+                count++;
+            }
+        }
+
+        return count;
     }
     
     public int getTotalPotentialCount() {
@@ -528,8 +574,9 @@ public class StarTowerGame {
     }
     
     public void addRarePotentialSelectors(int amount) {
-        if (amount <= 0) return;
-        this.pendingRarePotentialCases += amount;
+        int toAdd = Math.min(amount, this.getRemainingRarePotentialCount());
+        if (toAdd <= 0) return;
+        this.pendingRarePotentialCases += toAdd;
     }
     
     /**
@@ -778,8 +825,37 @@ public class StarTowerGame {
     }
     
     public int getRandomSubNoteId() {
+        return this.getRandomSubNoteId(null);
+    }
+
+    /**
+     * Picks a random sub note skill from this tower's drop group, weighting element
+     * melodies higher when they match deployed characters (+2 for main, +1 per support).
+     */
+    public int getRandomSubNoteId(IntSet excludeIds) {
         int groupId = this.getData().getSubNoteSkillDropGroupId();
-        return SubNoteSkillDropGroupDef.getRandomDrop(groupId);
+        var bonusWeights = this.getSubNoteElementWeights();
+        return SubNoteSkillDropGroupDef.getRandomDrop(groupId, bonusWeights, excludeIds);
+    }
+
+    private Int2IntMap getSubNoteElementWeights() {
+        var weights = new Int2IntOpenHashMap();
+
+        for (int i = 0; i < this.getCharIds().length; i++) {
+            var character = this.getCharByIndex(i);
+            if (character == null) {
+                continue;
+            }
+
+            int subNoteId = character.getData().getElementType().getSubNoteSkillItemId();
+            if (subNoteId <= 0) {
+                continue;
+            }
+
+            weights.addTo(subNoteId, i == 0 ? 2 : 1);
+        }
+
+        return weights;
     }
     
     private PlayerChangeInfo addRandomSubNoteSkills(PlayerChangeInfo change) {

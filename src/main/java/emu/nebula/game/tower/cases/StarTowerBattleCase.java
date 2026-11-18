@@ -28,11 +28,14 @@ public class StarTowerBattleCase extends StarTowerBaseCase {
     
     @Override
     public void onRegister() {
-        // Get relevant floor exp data
-        // fishiatee: THERE'S NO LINQ IN JAVAAAAAAAAAAAAA
+        // Get relevant floor exp data for the current stage
+        int stage = this.getRoom().getStage().getStage();
         var floorExpData = GameData.getStarTowerFloorExpDataTable().stream()
-                            .filter(f -> f.getStarTowerId() == this.getGame().getId())
+                            .filter(f -> f.getStarTowerId() == this.getGame().getId() && f.getStage() == stage)
                             .findFirst()
+                            .or(() -> GameData.getStarTowerFloorExpDataTable().stream()
+                                .filter(f -> f.getStarTowerId() == this.getGame().getId())
+                                .findFirst())
                             .orElseThrow();
         
         // Determine appropriate reward
@@ -77,25 +80,40 @@ public class StarTowerBattleCase extends StarTowerBaseCase {
             this.getGame().addExp(this.expReward);
             int picks = this.getGame().levelUp();
             
-            // Handle potential picks
-            if (picks > 0) {
-                // Check special cases
-                if (this.getGame().getFloorCount() == 1) {
-                    // First floor potential selector is always special
-                    this.getGame().addRarePotentialSelectors(1);
-                    picks--;
-                } else if (this.getRoomType() == RoomType.BossRoom || this.getRoomType() == RoomType.FinalBossRoom) {
-                    // First selector after a boss fight is also rare
-                    this.getGame().addRarePotentialSelectors(1);
-                    picks--;
-                } else if (Utils.randomChance(0.125D)) {
-                    // Random 1/8th chance for a rare potential
-                    this.getGame().addRarePotentialSelectors(1);
-                    picks--;
+            // Handle rare potential picks (guarantee 2 per deployed character across a run)
+            int remainingRare = this.getGame().getRemainingRarePotentialCount();
+            int rareDrops = 0;
+
+            if (remainingRare > 0) {
+                int remainingBattlesAfterThis = this.getGame().getRemainingBattleRoomCount();
+
+                if (this.getRoomType() == RoomType.FinalBossRoom || remainingBattlesAfterThis == 0) {
+                    // Final battle: award all remaining rare potentials so every deployed char gets 2
+                    rareDrops = remainingRare;
+                } else if (picks > 0) {
+                    if (this.getGame().getFloorCount() == 1 || this.getRoomType() == RoomType.BossRoom) {
+                        rareDrops = 1;
+                    } else {
+                        double baseChance = this.getRoomType() == RoomType.EliteBattleRoom ? 0.50D : 0.25D;
+                        double pacedChance = (double) remainingRare / (remainingBattlesAfterThis + 1);
+                        if (Utils.randomChance(Math.max(baseChance, pacedChance))) {
+                            rareDrops = 1;
+                        }
+                    }
+
+                    // Catch up if remaining battles cannot cover the remaining rare potentials at 1 per room
+                    if (remainingRare - rareDrops > remainingBattlesAfterThis) {
+                        rareDrops = Math.min(picks, remainingRare - remainingBattlesAfterThis);
+                    }
+                }
+
+                if (rareDrops > 0) {
+                    this.getGame().addRarePotentialSelectors(rareDrops);
+                    picks = Math.max(0, picks - rareDrops);
                 }
             }
-            
-            // Add remaining picks
+
+            // Add remaining normal picks
             this.getGame().addPotentialSelectors(picks);
             
             // Add clear time
