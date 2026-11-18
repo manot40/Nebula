@@ -28,6 +28,9 @@ import lombok.Getter;
 @Getter
 @Entity(value = "builds", useDiscriminator = false)
 public class StarTowerBuild implements GameDatabaseObject {
+    public static final int MODIFIER_POTENTIAL = 1 << 0;
+    public static final int MODIFIER_NOTE = 1 << 1;
+
     @Id
     private int uid;
     @Indexed
@@ -36,7 +39,9 @@ public class StarTowerBuild implements GameDatabaseObject {
     private String name;
     private boolean lock;
     private boolean preference;
+    private boolean discard;
     private int score;
+    private int modifierState;
     
     private int[] charIds;
     private int[] discIds;
@@ -122,6 +127,10 @@ public class StarTowerBuild implements GameDatabaseObject {
         // Set locked state
         this.lock = state;
         Nebula.getGameDatabase().update(this, this.getUid(), "lock", this.isLock());
+
+        if (state && this.discard) {
+            this.setDiscard(false);
+        }
     }
     
     public void setPreference(boolean state) {
@@ -133,6 +142,23 @@ public class StarTowerBuild implements GameDatabaseObject {
         // Set preference (favorite toggle)
         this.preference = state;
         Nebula.getGameDatabase().update(this, this.getUid(), "preference", this.isPreference());
+
+        if (state && this.discard) {
+            this.setDiscard(false);
+        }
+    }
+
+    public void setDiscard(boolean state) {
+        if (this.discard == state) {
+            return;
+        }
+
+        this.discard = state;
+        Nebula.getGameDatabase().update(this, this.getUid(), "discard", this.isDiscard());
+    }
+
+    public void clearDiscard() {
+        this.discard = false;
     }
 
     public void refreshSecondarySkills() {
@@ -209,6 +235,7 @@ public class StarTowerBuild implements GameDatabaseObject {
                 .setName(this.getName())
                 .setLock(this.isLock())
                 .setPreference(this.isPreference())
+                .setDiscard(this.isDiscard())
                 .setScore(this.getScore())
                 .addAllDiscIds(this.getDiscIds());
         
@@ -224,8 +251,29 @@ public class StarTowerBuild implements GameDatabaseObject {
         return proto;
     }
     
+    public boolean hasModifierState(int flag) {
+        return (this.modifierState & flag) != 0;
+    }
+
+    public void markModifierUsed(int flag) {
+        this.modifierState |= flag;
+    }
+
+    public boolean hasChar(int charId) {
+        if (this.charIds == null) {
+            return false;
+        }
+        for (int id : this.charIds) {
+            if (id == charId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public StarTowerBuildDetail toDetailProto() {
-        var proto = StarTowerBuildDetail.newInstance();
+        var proto = StarTowerBuildDetail.newInstance()
+                .setModifierState(this.getModifierState());
         
         // Potentials
         for (var entry : this.getPotentials().int2IntEntrySet()) {
